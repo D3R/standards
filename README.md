@@ -9,7 +9,6 @@ For PSR you will want to point PHP Code Sniffer at the XML file.
 
 ```
 "phpcs_additional_args": {
-	"--standard": "/clients/custom/d3r-standards/D3R-PHP.xml",
-    "-n": ""
+	"--standard": "/clients/custom/d3r-standards/D3R-PHP.xml"
 }
 ```
