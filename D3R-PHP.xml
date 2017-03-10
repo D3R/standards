@@ -6,4 +6,9 @@
 	<exclude name="PSR2.Classes.PropertyDeclaration" />
 	<exclude name="Squiz.Classes.ValidClassName" />
  </rule>
+ <rule ref="Squiz.Commenting.InlineComment">
+        <exclude name="Squiz.Commenting.InlineComment.NotCapital" />
+        <exclude name="Squiz.Commenting.InlineComment.SpacingAfter" />
+        <exclude name="Squiz.Commenting.InlineComment.InvalidEndChar" />
+  </rule>
 </ruleset>
