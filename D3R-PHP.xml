@@ -2,11 +2,9 @@
 <ruleset name="D3R">
     <description>The D3R Coding Standard</description>
     <rule ref="PSR2">
-        <exclude name="PSR1.Classes.ClassDeclaration"/>
-        <exclude name="PSR2.Methods.MethodDeclaration" />
-        <exclude name="PSR2.Classes.PropertyDeclaration"/>
-        <exclude name="Squiz.Classes.ValidClassName"/>
-        <exclude name="Generic.Files.LineLength" />
+        <exclude name="PSR1.Classes.ClassDeclaration" />
+        <exclude name="PSR2.Classes.PropertyDeclaration" />
+        <exclude name="Squiz.Classes.ValidClassName" />
     </rule>
     <rule ref="PSR1.Files.SideEffects">
        <exclude-pattern>*/tools/*</exclude-pattern>
