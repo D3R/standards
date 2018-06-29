@@ -1,0 +1,19 @@
+{
+    "name": "d3r/standards",
+    "authors": [
+        {
+            "name": "D3R Technical",
+            "email": "tech@d3r.com"
+        },
+        {
+            "name": "Phil Burton",
+            "email": "phil@d3r.com"
+        }
+    ],
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://packages.d3r.com"
+        }
+    ]
+}
