@@ -1,6 +1,5 @@
 D3R Coding Standards
 =========
-
 ### For using in a composer project
 
 ```composer require d3r/standards```
