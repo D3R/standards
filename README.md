@@ -11,7 +11,8 @@ For phpcs:
 }
 ```
 
-### If using globally for your editor
+### If using globally
+For your editor then we have a more strict standard so we can stage changes without breaking all builds
 Check these out into your /clients/custom folder.
 
 `git clone https://github.com/D3R/standards /clients/custom/d3r-standards`
@@ -21,5 +22,11 @@ For PSR you will want to point PHP Code Sniffer at the XML file.
 ```
 "phpcs_additional_args": {
 	"--standard": "/clients/custom/d3r-standards/D3R-PHP.xml"
+}
+```
+or
+```
+"phpcs_additional_args": {
+	"--standard": "/clients/custom/d3r-standards/D3R-DEV-PHP.xml"
 }
 ```
