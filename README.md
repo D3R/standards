@@ -23,7 +23,7 @@ or use the stricter standard
 php_code_sniffer:
 	allowed_warnings: 0
 	allowed_errors: 0
-	standard: "vendor/d3r/standards/D3R-PHP.yml"
+	standard: "vendor/d3r/standards/D3R-PHP.xml"
 ```
 
 ### Dev environment
