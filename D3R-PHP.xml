@@ -7,10 +7,12 @@
         <exclude name="PSR2.Classes.PropertyDeclaration"/>
         <exclude name="Squiz.Classes.ValidClassName"/>
         <exclude name="Generic.Files.LineLength" />
+        <include-pattern>*\.php$</include-pattern>
     </rule>
     <rule ref="PSR1.Files.SideEffects">
        <exclude-pattern>*/tools/*</exclude-pattern>
        <exclude-pattern>*/scripts/*</exclude-pattern>
+       <include-pattern>*\.php$</include-pattern>
     </rule>
     <rule ref="Squiz.Commenting.InlineComment">
         <exclude name="Squiz.Commenting.InlineComment.NotCapital" />
@@ -20,5 +22,19 @@
         <exclude name="Squiz.Commenting.InlineComment.WrongStyle" />
         <exclude name="Squiz.Commenting.InlineComment.InvalidEndChar" />
         <exclude name="Squiz.Commenting.InlineComment.SpacingBefore" />
+        <include-pattern>*\.php$</include-pattern>
+    </rule>
+    <rule ref="Squiz.Commenting.InlineComment">
+        <exclude name="Squiz.Commenting.InlineComment.NotCapital" />
+        <exclude name="Squiz.Commenting.InlineComment.SpacingAfter" />
+        <exclude name="Squiz.Commenting.InlineComment.InvalidEndChar" />
+        <exclude name="Squiz.Commenting.InlineComment.DocBlock" />
+        <exclude name="Squiz.Commenting.InlineComment.WrongStyle" />
+        <exclude name="Squiz.Commenting.InlineComment.InvalidEndChar" />
+        <exclude name="Squiz.Commenting.InlineComment.SpacingBefore" />
+        <include-pattern>*\.php$</include-pattern>
+    </rule>
+    <rule ref="Generic.PHP.ClosingPHPTag">
+       <include-pattern>*\.html$</include-pattern>
     </rule>
 </ruleset>
