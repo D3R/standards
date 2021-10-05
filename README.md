@@ -2,12 +2,12 @@ D3R Coding Standards
 =========
 ### Include in composer
 
-```composer require d3r/standards```
+```composer require --dev d3r/standards```
 
 ### PHPCS
 ```
 "phpcs_additional_args": {
-	"--standard": "vendor/d3r/D3R-PHP.xml"
+	"--standard": "vendor/d3r/standards/D3R-PHP.xml"
 }
 ```
 
