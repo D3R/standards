@@ -13,13 +13,4 @@
        <exclude-pattern>*/tools/*</exclude-pattern>
        <exclude-pattern>*/scripts/*</exclude-pattern>
     </rule>
-    <rule ref="Squiz.Commenting.InlineComment">
-        <exclude name="Squiz.Commenting.InlineComment.NotCapital" />
-        <exclude name="Squiz.Commenting.InlineComment.SpacingAfter" />
-        <exclude name="Squiz.Commenting.InlineComment.InvalidEndChar" />
-        <exclude name="Squiz.Commenting.InlineComment.DocBlock" />
-        <exclude name="Squiz.Commenting.InlineComment.WrongStyle" />
-        <exclude name="Squiz.Commenting.InlineComment.InvalidEndChar" />
-        <exclude name="Squiz.Commenting.InlineComment.SpacingBefore" />
-    </rule>
 </ruleset>
