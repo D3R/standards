@@ -1,7 +1,7 @@
 parameters:
-  level: 0
-	paths:
-		- config
-		- modules
-		- src
-		- tests
+    level: 0
+    paths:
+        - config
+        - modules
+        - src
+        - tests
