@@ -1,7 +1,12 @@
 parameters:
     level: 0
+    tmpDir: .phpstan-cache
     paths:
         - ../../../config
         - ../../../modules
         - ../../../src
         - ../../../tests
+    earlyTerminatingMethodCalls:
+        D3R:
+            - redirect
+            - redirectToPrevious
