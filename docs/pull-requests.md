@@ -1,6 +1,6 @@
 # Pull Requests
 
-## Pull Request Description
+## Description
 ### Task Lists
 Task lists are lists of checkboxes, written in Markdown. We typically use them as a lightweight mechanism to list the things that need to be done before a PR is ready for review, or ready to merge. If a task list exists in a PR description, the PR cannot be merged until every task has been marked as completed or not applicable.
 
