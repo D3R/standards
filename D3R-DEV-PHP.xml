@@ -1,9 +1,5 @@
 <?xml version="1.0"?>
 <ruleset name="D3R-DEV">
     <description>The D3R Development Coding Standard</description>
-    <rule ref="PSR12">
-        <exclude name="PSR1.Classes.ClassDeclaration"/>
-        <exclude name="PSR2.Classes.PropertyDeclaration"/>
-        <exclude name="Squiz.Classes.ValidClassName"/>
-    </rule>
+    <rule ref="vendor/d3r/standards/D3R-PHP.xml" />
 </ruleset>
