@@ -20,6 +20,9 @@
     <rule ref="Generic.PHP.ForbiddenFunctions">
         <type>warning</type>
     </rule>
+    <rule ref="Squiz.Scope.StaticThisUsage">
+        <type>warning</type>
+    </rule>
     <rule ref="Squiz.Commenting.InlineComment">
         <exclude name="Squiz.Commenting.InlineComment.NotCapital" />
         <exclude name="Squiz.Commenting.InlineComment.SpacingAfter" />
