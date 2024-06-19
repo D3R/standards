@@ -7,7 +7,6 @@
         <exclude name="PSR2.Classes.PropertyDeclaration"/>
         <exclude name="Squiz.Classes.ValidClassName"/>
         <exclude name="Generic.Files.LineLength" />
-        <exclude name="PSR12.Properties.ConstantVisibility.NotFound" />
     </rule>
     <rule ref="PSR1.Files.SideEffects">
        <exclude-pattern>*/tools/*</exclude-pattern>
@@ -21,6 +20,9 @@
         <type>warning</type>
     </rule>
     <rule ref="Squiz.Scope.StaticThisUsage">
+        <type>warning</type>
+    </rule>
+    <rule ref="PSR12.Properties.ConstantVisibility">
         <type>warning</type>
     </rule>
     <rule ref="Generic.Arrays.DisallowLongArraySyntax">
