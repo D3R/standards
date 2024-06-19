@@ -31,6 +31,9 @@
     <rule ref="Squiz.Arrays.ArrayDeclaration.NoCommaAfterLast">
         <type>warning</type>
     </rule>
+    <rule ref="Squiz.Commenting.DocCommentAlignment">
+        <type>warning</type>
+    </rule>
     <rule ref="Squiz.Commenting.InlineComment">
         <exclude name="Squiz.Commenting.InlineComment.NotCapital" />
         <exclude name="Squiz.Commenting.InlineComment.SpacingAfter" />
