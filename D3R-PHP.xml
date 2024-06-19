@@ -43,4 +43,7 @@
         <exclude name="Squiz.Commenting.InlineComment.InvalidEndChar" />
         <exclude name="Squiz.Commenting.InlineComment.SpacingBefore" />
     </rule>
+    <rule ref="Generic.Commenting.Todo">
+        <type>warning</type>
+    </rule>
 </ruleset>
