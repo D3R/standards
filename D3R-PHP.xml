@@ -13,6 +13,7 @@
        <exclude-pattern>*/tools/*</exclude-pattern>
        <exclude-pattern>*/scripts/*</exclude-pattern>
     </rule>
+    <rule ref="Generic.PHP.Syntax" />
     <rule ref="Generic.PHP.DeprecatedFunctions">
         <type>warning</type>
     </rule>
