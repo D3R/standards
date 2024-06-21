@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <ruleset name="D3R">
-    <description>The D3R PSR-12 Coding Standard</description>
+    <!-- IMPORTANT: This standards file is deprecated, in favour of D3R-PHP.xml -->
+    <description>The D3R Coding Standard</description>
     <rule ref="./D3R-PHP.xml" />
 </ruleset>
