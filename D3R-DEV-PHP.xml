@@ -1,9 +1,6 @@
 <?xml version="1.0"?>
 <ruleset name="D3R-DEV">
+    <!-- IMPORTANT: This standards file is deprecated, in favour of D3R-PHP.xml -->
     <description>The D3R Development Coding Standard</description>
-    <rule ref="PSR12">
-        <exclude name="PSR1.Classes.ClassDeclaration"/>
-        <exclude name="PSR2.Classes.PropertyDeclaration"/>
-        <exclude name="Squiz.Classes.ValidClassName"/>
-    </rule>
+    <rule ref="./D3R-PHP.xml" />
 </ruleset>
