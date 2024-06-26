@@ -9,10 +9,13 @@
         <exclude name="Generic.Files.LineLength" />
     </rule>
     <rule ref="PSR1.Files.SideEffects">
-       <exclude-pattern>*/tools/*</exclude-pattern>
-       <exclude-pattern>*/scripts/*</exclude-pattern>
+        <exclude-pattern>*/tools/*</exclude-pattern>
+        <exclude-pattern>*/scripts/*</exclude-pattern>
     </rule>
     <rule ref="PSR12.Properties.ConstantVisibility">
+        <type>warning</type>
+    </rule>
+    <rule ref="Generic.PHP.DeprecatedFunctions">
         <type>warning</type>
     </rule>
     <rule ref="Squiz.Commenting.InlineComment">
