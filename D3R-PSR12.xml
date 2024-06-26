@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <ruleset name="D3R">
     <description>The D3R PSR-12 Coding Standard</description>
+    <arg name="extensions" value="php" />
     <rule ref="PSR12">
         <exclude name="PSR1.Classes.ClassDeclaration"/>
         <exclude name="PSR2.Methods.MethodDeclaration" />
