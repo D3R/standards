@@ -1,0 +1,17 @@
+name: standards
+id: ari:cloud:compass:99f81cd3-6055-4ddd-97a3-655f84dd430a:component/a6a6633a-8303-46fd-94f0-c5635a90b6ba/38c1bb70-9467-49bd-9f27-889d8ee35a15
+description: D3R Coding standards
+configVersion: 1
+typeId: SERVICE
+fields:
+  tier: 4
+links: []
+relationships:
+  DEPENDS_ON: []
+labels:
+  - hound
+  - package
+  - psr
+  - source:github
+  - standards
+customFields: null
