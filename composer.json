@@ -1,13 +1,10 @@
 {
     "name": "d3r/standards",
+    "keywords": ["dev"],
     "authors": [
         {
             "name": "D3R Technical",
             "email": "tech@d3r.com"
-        },
-        {
-            "name": "Phil Burton",
-            "email": "phil@d3r.com"
         }
     ],
     "repositories": [
