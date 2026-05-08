@@ -12,8 +12,8 @@ return (new LicenseConfigurationBuilder())
         'Apache-2.0',
         'LGPL-3.0+',
         'MPL-2.0',
-        'ISL',
+        'ISC',
         'MPL-2.0',
     )
-    ->addAllowedVendor('d3r') // Allow any license from a specific vendor, i.e. your own company.
+    ->addAllowedVendor('d3r') // Allow all D3R packages
     ->build();
