@@ -12,5 +12,8 @@
             "type": "composer",
             "url": "https://packages.d3r.com"
         }
-    ]
+    ],
+    "require": {
+        "lendable/composer-license-checker": "^1.4"
+    }
 }

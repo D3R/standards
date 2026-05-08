@@ -1,0 +1,96 @@
+{
+    "name": "lendable/composer-license-checker",
+    "description": "Composer license checker",
+    "license": "MIT",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Lendable Ltd",
+            "email": "contact@lendable.co.uk"
+        }
+    ],
+    "require": {
+        "php": "~8.4.0 || ~8.5.0",
+        "composer-runtime-api": "^2.2",
+        "symfony/console": "^5.4 || ^6.4 || ^7.3 || ^8.0",
+        "symfony/process": "^5.4.46 || ^6.4.14 || ^7.3 || ^8.0"
+    },
+    "require-dev": {
+        "ergebnis/composer-normalize": "^2.43.0",
+        "lendable/phpunit-extensions": "^0.3",
+        "php-cs-fixer/shim": "^3.61.1",
+        "phpstan/phpstan": "^2.0",
+        "phpstan/phpstan-deprecation-rules": "^2.0",
+        "phpstan/phpstan-phpunit": "^2.0",
+        "phpstan/phpstan-strict-rules": "^2.0",
+        "phpunit/phpunit": "^11.3.0",
+        "rector/rector": "^2.0",
+        "symfony/filesystem": "^6.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Lendable\\ComposerLicenseChecker\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\E2E\\Lendable\\ComposerLicenseChecker\\": "tests/e2e/",
+            "Tests\\Support\\Lendable\\ComposerLicenseChecker\\": "tests/support/",
+            "Tests\\Unit\\Lendable\\ComposerLicenseChecker\\": "tests/unit/"
+        }
+    },
+    "bin": [
+        "bin/composer-license-checker"
+    ],
+    "config": {
+        "allow-plugins": {
+            "ergebnis/composer-normalize": true
+        },
+        "platform": {
+            "php": "8.4"
+        },
+        "sort-packages": true
+    },
+    "scripts": {
+        "code-style:check": [
+            "PHP_CS_FIXER_FUTURE_MODE=1 php-cs-fixer fix --dry-run --diff --ansi"
+        ],
+        "code-style:fix": [
+            "PHP_CS_FIXER_FUTURE_MODE=1 php-cs-fixer fix --diff --ansi"
+        ],
+        "license:check": [
+            "composer-license-checker"
+        ],
+        "phpstan": [
+            "phpstan --memory-limit=-1 --ansi"
+        ],
+        "phpunit:e2e": [
+            "phpunit --colors --testsuite e2e"
+        ],
+        "phpunit:unit": [
+            "phpunit --colors --testsuite unit"
+        ],
+        "rector:check": [
+            "rector --dry-run --ansi --no-progress-bar"
+        ],
+        "rector:fix": [
+            "rector --ansi --no-progress-bar"
+        ],
+        "security:check": [
+            "@composer audit --no-dev"
+        ],
+        "static-analysis": [
+            "composer validate",
+            "@license:check",
+            "@code-style:check",
+            "@phpstan",
+            "@rector:check"
+        ],
+        "tests:e2e": [
+            "@phpunit:e2e"
+        ],
+        "tests:unit": [
+            "@phpunit:unit"
+        ]
+    }
+}
