@@ -13,7 +13,6 @@ return (new LicenseConfigurationBuilder())
         'LGPL-3.0+',
         'MPL-2.0',
         'ISC',
-        'MPL-2.0',
     )
     ->addAllowedVendor('d3r') // Allow all D3R packages
     ->build();
