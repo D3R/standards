@@ -13,6 +13,7 @@ return (new LicenseConfigurationBuilder())
         'LGPL-2.1-only',
         'LGPL-2.1-or-later',
         'LGPL-3.0+',
+        'LGPL-3.0-or-later',
         'MPL-2.0',
         'ISC',
     )
