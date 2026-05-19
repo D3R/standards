@@ -34,4 +34,4 @@ Then point your editor's phpcs and phpcbf to `/Users/<username>/.composer/vendor
 ## Licence Checker
 You will automatically get licence checking in CI if you are using the standard D3R GitHub Workflow.
 
-If you need to add specific packages, vendors or licences to you local project, you can create a `.allowed-licenses.php` config file using the [base config](./.allowed-licenses.php) as a starting point.
+If you need to add specific packages, vendors or licences to your local project, you can create a `.allowed-licenses.php` config file using the [base config](./.allowed-licenses.php) as a starting point.
