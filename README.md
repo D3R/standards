@@ -25,13 +25,13 @@ php_code_sniffer:
 ```
 
 ## Dev environment
-For your editor I suggest checking out d3r/standards globally:
+For your editor I suggest checking this package out globally:
 
-`composer global require https://github.com/D3R/standards`
+`composer global require d3r/standards`
 
-then point your editor's phpcs and phpcbf to `/Users/<username>/.composer/vendor/d3r/standards/D3R-PHP.xml`.
+Then point your editor's phpcs and phpcbf to `/Users/<username>/.composer/vendor/d3r/standards/D3R-PHP.xml`.
 
 ## Licence Checker
 You will automatically get licence checking in CI if you are using the standard D3R GitHub Workflow.
 
-If you need to add specific packages, vendors or licences to you local project, you can create a .allowed-licenses.php` config file using the [base config](./.allowed-licenses.php) as a starting point.
+If you need to add specific packages, vendors or licences to you local project, you can create a `.allowed-licenses.php` config file using the [base config](./.allowed-licenses.php) as a starting point.
