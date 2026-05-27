@@ -24,7 +24,14 @@ abstract class ComposerLicenseChecker
                 'MPL-2.0',
                 'ISC',
             )
-            ->addAllowedVendor('d3r') // Allow all D3R packages
+             // Allow all D3R packages
+            ->addAllowedVendor('d3r')
+            // https://github.com/facebook/facebook-php-business-sdk/blob/main/LICENSE is permissive
+            ->addAllowedPackage('facebook/php-business-sdk')
+            // Can use either Apache or GPL
+            ->addAllowedPackage('voku/portable-utf8')
+            // We don't care about dev dependencies as they aren't distributed
+            ->ignoreDev(true)
             ;
     }
 }
