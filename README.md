@@ -16,14 +16,6 @@ or use the stricter standard
 }
 ```
 
-## PHPCI
-```
-php_code_sniffer:
-	allowed_warnings: 0
-	allowed_errors: 0
-	standard: "vendor/d3r/standards/D3R-PHP.xml"
-```
-
 ## Dev environment
 For your editor I suggest checking this package out globally:
 
