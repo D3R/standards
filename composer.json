@@ -7,10 +7,18 @@
             "email": "tech@d3r.com"
         }
     ],
+    "autoload": {
+        "psr-4": {
+            "D3R\\Standards\\": "src/"
+        }
+    },
     "repositories": [
         {
             "type": "composer",
             "url": "https://packages.d3r.com"
         }
-    ]
+    ],
+    "require": {
+        "lendable/composer-license-checker": "^1.0"
+    }
 }
