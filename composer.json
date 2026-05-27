@@ -7,6 +7,11 @@
             "email": "tech@d3r.com"
         }
     ],
+    "autoload": {
+        "psr-4": {
+            "D3R\\Standards\\": "src/"
+        }
+    },
     "repositories": [
         {
             "type": "composer",
