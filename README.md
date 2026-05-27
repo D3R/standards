@@ -35,3 +35,18 @@ Then point your editor's phpcs and phpcbf to `/Users/<username>/.composer/vendor
 You will automatically get licence checking in CI if you are using the standard D3R GitHub Workflow.
 
 If you need to add specific packages, vendors or licences to your local project, you can create a `.allowed-licenses.php` config file using the [base config](./.allowed-licenses.php) as a starting point.
+
+As an example, to include an extra vendor and a specific package on top of the base setup, you would add the following to `.allowed-licenses.php`:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use D3R\Standards\ComposerLicenseChecker;
+
+return ComposerLicenseChecker::defaultBuilder()
+    ->addAllowedVendor('foo') // Allow all foo packages
+    ->addAllowedPackage('printnode/printnode-php') // Specifies MIT in GitHub but not in composer.json
+    ->build();
+```
