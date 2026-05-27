@@ -25,6 +25,7 @@ abstract class ComposerLicenseChecker
                 'ISC',
             )
             ->addAllowedVendor('d3r') // Allow all D3R packages
+            ->ignoreDev(true) // We don't care about dev dependencies as they aren't distributed
             ;
     }
 }
