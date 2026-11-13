@@ -24,7 +24,7 @@ $files = [
 foreach ($files as $name => $contents) {
     file_put_contents($fixture . '/src/' . $name, $contents);
 }
-file_put_contents($fixture . '/src/Product.xml', '<fields><field><name>Title</name><dbname>title</dbname><type>Text</type></field></fields>');
+file_put_contents($fixture . '/src/Product.xml', '<model><fieldset><field><name>Title</name><dbname>title</dbname><type>Text</type></field><field><name>Display name &amp; Value</name><type>Text</type></field></fieldset></model>');
 file_put_contents($fixture . '/vendor/composer/autoload_classmap.php', '<?php return ["D3R_Model" => $baseDir . "/src/D3R_Model.php", "D3R_Model_Field_Text" => $baseDir . "/src/D3R_Model_Field_Text.php"];');
 file_put_contents($fixture . '/vendor/composer/autoload_psr4.php', '<?php return ["Fixture\\\\" => [$baseDir . "/src"]];');
 file_put_contents($fixture . '/vendor/composer/autoload_namespaces.php', '<?php return [];');
@@ -73,6 +73,10 @@ $runCheck = static function (string $package, string $fixture, string $cache, in
 };
 
 $valid = $runCheck($package, $fixture, $cache, 0);
+$inventory = json_decode(file_get_contents($fixture . '/reports/inventory.json'), true, 512, JSON_THROW_ON_ERROR);
+if (!isset($inventory['models']['Fixture\\Product']['supported']['display_name_and_value'])) {
+    throw new RuntimeException('D3R implicit field name or arbitrary XML container root was not discovered.');
+}
 file_put_contents($fixture . '/src/Control.php', '<?php namespace Fixture; function invalid(Product $product): mixed { return $product->titel(); }');
 $invalid = $runCheck($package, $fixture, $cache, 1);
 $wholeSource = $runCheck($package, $fixture, $cache, 1, false);

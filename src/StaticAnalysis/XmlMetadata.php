@@ -66,7 +66,7 @@ final class XmlMetadata
                 $previous = libxml_use_internal_errors(true);
                 try {
                     $xml = simplexml_load_string($contents, SimpleXMLElement::class, LIBXML_NONET);
-                    if ($xml === false || $xml->getName() !== 'fields') {
+                    if ($xml === false) {
                         throw new RuntimeException('Invalid fields XML: ' . $path);
                     }
                 } finally {
@@ -87,12 +87,8 @@ final class XmlMetadata
                             continue;
                         }
                         $name = trim((string) $field->dbname);
-                        if ($name === '' && preg_match('/^[A-Za-z][A-Za-z0-9]*$/D', (string) $field->name)) {
-                            // This restricted ASCII case agrees with D3R_String::getUrlName().
-                            $name = strtolower((string) $field->name);
-                        }
                         if ($name === '') {
-                            throw new RuntimeException('Explicit dbname required for a non-simple field name in ' . $path);
+                            $name = self::implicitFieldName((string) $field->name, $path);
                         }
                         $local[$name] = ['type' => $type, 'source' => $path];
                     }
@@ -157,6 +153,30 @@ final class XmlMetadata
             'magoPhp' => $header . implode("\n", $magoDeclarations),
             'inventory' => $inventory,
         ];
+    }
+
+    /**
+     * Match D3R_String::getUrlName($name, '_') for ASCII labels without loading the framework.
+     *
+     * @param string $name Human-readable XML label.
+     * @param string $path Source path for an actionable unsupported-name error.
+     * @return string Normalised magic-member name.
+     */
+    private static function implicitFieldName(string $name, string $path): string
+    {
+        $name = html_entity_decode(strip_tags(trim($name)));
+        if (preg_match('/[^\x00-\x7F]/', $name)) {
+            throw new RuntimeException('Implicit Unicode field name needs a reviewed transliteration rule in ' . $path);
+        }
+        $name = str_replace('&', 'and', $name);
+        $name = str_replace([' ', '_', '-', '/'], '_', $name);
+        $name = str_replace(["'", '"', '!', ',', '*', '?'], '', $name);
+        $name = preg_replace('/[^\w_]/', '', $name);
+        $name = strtolower(preg_replace('/_{2,}/', '_', $name));
+        if ($name === '') {
+            throw new RuntimeException('Empty implicit field name in ' . $path);
+        }
+        return $name;
     }
 
     /**
