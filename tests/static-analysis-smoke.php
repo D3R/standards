@@ -41,18 +41,35 @@ file_put_contents($fixture . '/vendor/d3r.php', '<?php D3R::container()->get("pr
  */
 $runCheck = static function (string $package, string $fixture, string $cache, int $expected, bool $focused = true): array {
     $command = [PHP_BINARY, $package . '/bin/d3r-analysis', 'check', '--project=' . $fixture,
-        '--cache-dir=' . $cache, '--report-dir=' . $fixture . '/reports'];
+        '--cache-dir=' . $cache, '--report-dir=' . $fixture . '/reports', '--github'];
     if ($focused) {
         $command[] = '--path=src/Control.php';
     }
-    $process = proc_open($command, [0 => STDIN, 1 => ['pipe', 'w'], 2 => STDERR], $pipes);
+    $environment = getenv();
+    $environment['GITHUB_STEP_SUMMARY'] = $fixture . '/summary.md';
+    $environment['GITHUB_OUTPUT'] = $fixture . '/outputs';
+    file_put_contents($environment['GITHUB_STEP_SUMMARY'], '');
+    file_put_contents($environment['GITHUB_OUTPUT'], '');
+    $process = proc_open($command, [0 => STDIN, 1 => ['pipe', 'w'], 2 => STDERR], $pipes, null, $environment);
     $stdout = stream_get_contents($pipes[1]);
     fclose($pipes[1]);
     $exit = proc_close($process);
     if ($exit !== $expected || file_exists($fixture . '/src/EXECUTED')) {
         throw new RuntimeException('Unexpected CLI result or executed source: ' . $stdout);
     }
-    return json_decode(file_get_contents($fixture . '/reports/result.json'), true, 512, JSON_THROW_ON_ERROR);
+    $result = json_decode(file_get_contents($fixture . '/reports/result.json'), true, 512, JSON_THROW_ON_ERROR);
+    $summary = file_get_contents($environment['GITHUB_STEP_SUMMARY']);
+    $outputs = file_get_contents($environment['GITHUB_OUTPUT']);
+    if (!str_contains($summary, $result['status']) || !str_contains($outputs, 'reason=')) {
+        throw new RuntimeException('Inline status or action failure reason is missing.');
+    }
+    if ($result['status'] === 'incomplete-discovery' && !str_contains($summary, 'getModelList')) {
+        throw new RuntimeException('Discovery failure has no inline explanation.');
+    }
+    if (str_contains($summary, 'Download the report artifact')) {
+        throw new RuntimeException('Failure explanation still requires an artifact.');
+    }
+    return $result;
 };
 
 $valid = $runCheck($package, $fixture, $cache, 0);
@@ -67,5 +84,11 @@ $partial = $runCheck($package, $fixture, $cache, 2);
 if ($partial['status'] !== 'incomplete-discovery') {
     throw new RuntimeException('Partial discovery was presented as complete.');
 }
-echo "PASS: clean XML method, typo finding, incomplete-discovery exit, and source-execution sentinel.\n";
+file_put_contents($fixture . '/reports/mago.stderr', 'STALE ERROR FROM AN EARLIER RUN');
+file_put_contents($fixture . '/vendor/composer/autoload_psr4.php', '<?php return INVALID;');
+$toolingFailure = $runCheck($package, $fixture, $cache, 2);
+if ($toolingFailure['status'] !== 'tooling-failure' || isset($toolingFailure['stderr'])) {
+    throw new RuntimeException('Tooling failure was misclassified or reused stale process errors.');
+}
+echo "PASS: clean XML method, typo finding, incomplete-discovery exit, inline failure reporting, and source-execution sentinel.\n";
 echo 'Fixture/reports retained at ' . $fixture . "\n";

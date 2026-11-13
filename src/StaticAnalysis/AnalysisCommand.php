@@ -28,6 +28,7 @@ final class AnalysisCommand
     public function run(array $arguments): int
     {
         $reportDirectory = null;
+        $analysisStarted = false;
         try {
             [$command, $options] = $this->arguments($arguments);
             if (in_array($command, ['help', '--help', '-h'], true)) {
@@ -113,6 +114,7 @@ final class AnalysisCommand
             if (!is_resource($process)) {
                 throw new RuntimeException('Cannot start Mago.');
             }
+            $analysisStarted = true;
             $exit = proc_close($process);
             $raw = file_get_contents($reportDirectory . '/mago.json');
             if (trim($raw) === '') {
@@ -129,15 +131,20 @@ final class AnalysisCommand
                 'wallSeconds' => round(microtime(true) - $started, 3), 'magoExit' => $exit,
                 'exit' => $coverage['gaps'] ? 2 : $findingExit];
             file_put_contents($reportDirectory . '/result.json', $this->json($result));
-            $this->report($result, $diagnostics['issues'], $project, isset($options['github']));
+            $this->report($result, $diagnostics['issues'], $coverage['gaps'], $project, isset($options['github']));
             echo $this->json($result + ['reports' => $reportDirectory]);
             return $result['exit'];
         } catch (Throwable $error) {
             fwrite(STDERR, 'D3R analysis tooling error: ' . $error->getMessage() . "\n");
+            $result = ['status' => 'tooling-failure', 'exit' => 2, 'message' => $error->getMessage()];
             if ($reportDirectory !== null && is_dir($reportDirectory)) {
-                file_put_contents($reportDirectory . '/result.json', $this->json(['status' => 'tooling-failure',
-                    'exit' => 2, 'message' => $error->getMessage()]));
+                $stderr = $reportDirectory . '/mago.stderr';
+                if ($analysisStarted && is_file($stderr)) {
+                    $result['stderr'] = file_get_contents($stderr, false, null, max(0, filesize($stderr) - 12000), 12000);
+                }
+                file_put_contents($reportDirectory . '/result.json', $this->json($result));
             }
+            $this->report($result, [], [], ($project ?? false) ?: getcwd(), isset($options['github']));
             return 2;
         }
     }
@@ -208,18 +215,49 @@ final class AnalysisCommand
     }
 
     /**
-     * Emit read-only workflow annotations and a short summary; retain full findings in artifacts.
+     * Explain failures inline, with bounded logs, annotations and a job summary.
      *
-     * @param array $result Result input for this operation.
-     * @param array $issues Issues input for this operation.
+     * @param array $result Analysis status, counts and optional tooling error.
+     * @param array $issues Mago diagnostics; at most 50 become annotations.
+     * @param array $gaps Unresolved discovery cases; at most 50 are displayed.
      * @param string $project Absolute consuming-project root.
-     * @param bool $github Github input for this operation.
+     * @param bool $github Whether GitHub reporting was explicitly requested.
      * @return void
      */
-    private function report(array $result, array $issues, string $project, bool $github): void
+    private function report(array $result, array $issues, array $gaps, string $project, bool $github): void
     {
         if (!$github) {
             return;
+        }
+        $escapeData = static fn(string $text): string => str_replace(
+            ['%', "\r", "\n"],
+            ['%25', '%0D', '%0A'],
+            $text
+        );
+        $escapeProperty = static fn(string $text): string => str_replace(
+            [',', ':'],
+            ['%2C', '%3A'],
+            $escapeData($text)
+        );
+        $cell = static function (string $text) use ($project): string {
+            $text = str_replace([$project . '/', "\r", "\n"], ['', ' ', ' '], $text);
+            $text = htmlspecialchars(substr($text, 0, 800), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            return str_replace(['|', '`'], ['&#124;', '&#96;'], $text);
+        };
+        $reason = match ($result['status']) {
+            'clean' => 'Mago completed with no diagnostics or recorded discovery gaps.',
+            'diagnostics' => 'Mago reported ' . $result['diagnostics'] . ' diagnostics.',
+            'incomplete-discovery' => 'D3R discovery is incomplete: ' . $result['discoveryGaps'] . ' gaps; '
+                . $result['diagnostics'] . ' Mago diagnostics. See the discovery cases below.',
+            default => 'Mago tooling failed: ' . ($result['message'] ?? 'Unknown error.'),
+        };
+        $reason = substr(str_replace(["\r", "\n"], ' ', $reason), 0, 1000);
+        if ($result['exit'] !== 0) {
+            echo '::error title=D3R Mago result::' . $escapeData($reason) . "\n";
+        }
+        $output = getenv('GITHUB_OUTPUT');
+        if ($output) {
+            file_put_contents($output, 'reason=' . $reason . "\nstatus=" . $result['status'] . "\n", FILE_APPEND);
         }
         foreach (array_slice($issues, 0, 50) as $issue) {
             foreach ($issue['annotations'] ?? [] as $annotation) {
@@ -232,27 +270,48 @@ final class AnalysisCommand
                     continue;
                 }
                 $file = substr($file, strlen($project) + 1);
-                $escapeData = static fn(string $text): string => str_replace(
-                    ['%', "\r", "\n"],
-                    ['%25', '%0D', '%0A'],
-                    $text
-                );
-                $escapeProperty = static fn(string $text): string => str_replace(
-                    [',', ':'],
-                    ['%2C', '%3A'],
-                    $escapeData($text)
-                );
                 echo '::warning file=' . $escapeProperty($file) . ',line=' . ($span['start']['line'] + 1)
-                    . ',title=' . $escapeProperty($issue['code']) . '::' . $escapeData($issue['message']) . "\n";
+                    . ',title=' . $escapeProperty($issue['code']) . '::' . $escapeData(substr($issue['message'], 0, 800)) . "\n";
                 break;
             }
         }
+        $lines = ['### D3R Mago pilot', '', '**' . $cell($reason) . '**', '',
+            'Status: ' . $cell($result['status']) . '; exit ' . $result['exit'] . '.', ''];
+        if (isset($result['metadataModels'])) {
+            $lines[] = $result['metadataModels'] . ' models with generated metadata. Counts are findings, not confirmed bugs.';
+        }
+        $counts = array_count_values(array_column($issues, 'code'));
+        arsort($counts);
+        if ($counts) {
+            $lines = array_merge($lines, ['', '#### Diagnostic categories (top 20)', '', '| Category | Count |', '| --- | ---: |']);
+            foreach (array_slice($counts, 0, 20, true) as $code => $count) {
+                $lines[] = '| ' . $cell($code) . ' | ' . $count . ' |';
+            }
+            $lines[] = '';
+            $lines[] = 'Up to 50 individual findings appear as file/line annotations in the analysis step.';
+        }
+        if ($gaps) {
+            $lines = array_merge($lines, ['', '#### Discovery gaps (first 50 of ' . count($gaps) . ')', '',
+                '| Provider or model | Reason |', '| --- | --- |']);
+            foreach (array_slice($gaps, 0, 50) as $gap) {
+                $lines[] = '| ' . $cell($gap['provider'] ?? $gap['model'] ?? 'Discovery') . ' | ' . $cell($gap['reason']) . ' |';
+            }
+        }
+        if (!empty($result['stderr'])) {
+            $lines[] = "\n#### Tool stderr (last 12 KB)\n\n<pre>" . htmlspecialchars(
+                $result['stderr'],
+                ENT_QUOTES | ENT_SUBSTITUTE,
+                'UTF-8'
+            ) . '</pre>';
+        }
+        $lines[] = "\nOutput is capped. Full reports remain on the runner only unless artifact upload is explicitly enabled.";
+        $text = implode("\n", $lines) . "\n";
+        echo "::group::D3R Mago failure details and discovery coverage\n";
+        // Source-derived text must not be interpreted as additional workflow commands.
+        $token = bin2hex(random_bytes(16));
+        echo '::stop-commands::' . $token . "\n" . $text . '::' . $token . "::\n::endgroup::\n";
         $summary = getenv('GITHUB_STEP_SUMMARY');
         if ($summary) {
-            $text = "### D3R Mago pilot\n\nStatus: **" . $result['status'] . "**\n\n";
-            $text .= $result['diagnostics'] . ' diagnostics; ' . $result['discoveryGaps'] . ' discovery gaps; '
-                . $result['metadataModels'] . " models with generated metadata.\n\n";
-            $text .= "Download the report artifact for complete diagnostics and discovery provenance.\n";
             file_put_contents($summary, $text, FILE_APPEND);
         }
     }

@@ -64,7 +64,7 @@ jobs:
       - uses: ./vendor/d3r/standards/.github/actions/mago
 ```
 
-The action restores only the isolated tool cache, performs fresh discovery, runs the same `check` command, emits up to 50 warning annotations, appends a job summary, and uploads complete reports for 14 days. Reports are retained even when analysis fails. It preserves the failing outcome; the caller's job-level `continue-on-error` makes the pilot advisory. Remove that setting only after discovery gaps and findings have been reviewed. No PR comments, write token, baseline generation, code scanning subscription or `security-events: write` permission is required.
+The action restores only the isolated tool cache, performs fresh discovery, runs the same `check` command, emits up to 50 warning annotations, appends a job summary, and explains failures directly in the log and job summary. It shows up to 50 discovery gaps and the top 20 diagnostic categories. **Artifact upload is off by default.** Full JSON reports exist only on the temporary runner unless debugging uploads are explicitly enabled. It preserves the failing outcome; the caller's job-level `continue-on-error` makes the pilot advisory. Remove that setting only after discovery gaps and findings have been reviewed. No PR comments, write token, baseline generation, code scanning subscription or `security-events: write` permission is required.
 
 For a custom workflow, the underlying commands are:
 
@@ -73,7 +73,15 @@ vendor/bin/d3r-analysis setup
 vendor/bin/d3r-analysis check --github --report-dir=.github/outputs/mago
 ```
 
-Use the package action to retain failure reports automatically, or add `actions/upload-artifact@v4` under `if: always()` yourself. Do not mask the exit with `|| true`. See [GitHub's workflow command documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands) for annotations and summaries.
+No artifact download is needed to understand a failure. The final failing step prints the specific reason and preserves the original exit code. For occasional debugging, opt in to a full report artifact retained for one day:
+
+```yaml
+- uses: ./vendor/d3r/standards/.github/actions/mago
+  with:
+    upload-artifacts: 'true'
+```
+
+Tool caching is separate and remains enabled; disabling report artifacts does not disable the tool cache. Do not mask the exit with `|| true`. See [GitHub's workflow command documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands) for annotations and summaries.
 
 Soho is the first consumer pilot. `D3R/github-workflows` has not been changed globally; IRM-1095 can reuse this package action after the consumer job is proven. Changing the standards branch alone does not add a job to existing projects.
 

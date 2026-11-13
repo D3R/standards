@@ -1,6 +1,9 @@
 name: D3R Mago pilot
 description: Run the package-owned Mago analyser and retain diagnostics and discovery coverage.
 inputs:
+  upload-artifacts:
+    description: Upload full debug reports (disabled by default)
+    default: 'false'
   report-directory:
     description: Project-relative report directory
     default: .github/outputs/mago
@@ -37,15 +40,24 @@ runs:
         echo "exit-code=$status" >> "$GITHUB_OUTPUT"
         exit "$status"
     - name: Upload Mago diagnostics and discovery coverage
-      if: always()
+      if: always() && inputs.upload-artifacts == 'true'
       uses: actions/upload-artifact@v4
       with:
         name: mago-${{ github.job }}-${{ github.run_attempt }}
         path: ${{ inputs.report-directory }}/
         include-hidden-files: true
         if-no-files-found: warn
-        retention-days: 14
+        retention-days: 1
     - name: Preserve the analysis result
       if: always() && steps.analysis.outcome == 'failure'
       shell: bash
-      run: exit 1
+      env:
+        D3R_ANALYSIS_EXIT: ${{ steps.analysis.outputs.exit-code }}
+        D3R_ANALYSIS_REASON: ${{ steps.analysis.outputs.reason }}
+      run: |
+        reason="${D3R_ANALYSIS_REASON:-Mago failed before producing a summary; see the analysis step.}"
+        reason="${reason//'%'/'%25'}"
+        reason="${reason//$'\r'/'%0D'}"
+        reason="${reason//$'\n'/'%0A'}"
+        printf '::error title=D3R Mago result::%s\n' "$reason"
+        exit "${D3R_ANALYSIS_EXIT:-2}"
