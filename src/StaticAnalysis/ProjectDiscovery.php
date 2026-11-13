@@ -26,6 +26,7 @@ final class ProjectDiscovery
     private array $cache = [];
     private array $parsedFiles = [];
     private array $inputHashes = [];
+    private array $devPaths = [];
 
     /**
      * Read generated maps as syntax trees, not as PHP includes.
@@ -35,6 +36,17 @@ final class ProjectDiscovery
      */
     public function __construct(private string $project, private string $vendor)
     {
+        $manifest = json_decode(file_get_contents($project . '/composer.json'), true, 512, JSON_THROW_ON_ERROR);
+        foreach (['psr-4', 'psr-0', 'classmap'] as $kind) {
+            foreach ($manifest['autoload-dev'][$kind] ?? [] as $paths) {
+                foreach ((array) $paths as $path) {
+                    $resolved = realpath($project . '/' . $path);
+                    if ($resolved !== false) {
+                        $this->devPaths[] = $resolved;
+                    }
+                }
+            }
+        }
         $this->parser = (new ParserFactory())->createForNewestSupportedVersion();
         $this->finder = new NodeFinder();
         $this->classmap = $this->composerMap($vendor . '/composer/autoload_classmap.php');
@@ -399,7 +411,14 @@ final class ProjectDiscovery
                 $paths[] = $file;
             }
         }
-        return $paths;
+        return array_values(array_filter($paths, function (string $path): bool {
+            foreach ($this->devPaths as $devPath) {
+                if ($path === $devPath || str_starts_with($path, $devPath . '/')) {
+                    return false;
+                }
+            }
+            return true;
+        }));
     }
 
     /**
