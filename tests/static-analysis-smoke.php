@@ -122,5 +122,34 @@ $toolingFailure = $runCheck($package, $fixture, $cache, 2);
 if ($toolingFailure['status'] !== 'tooling-failure' || isset($toolingFailure['stderr'])) {
     throw new RuntimeException('Tooling failure was misclassified or reused stale process errors.');
 }
-echo "PASS: clean XML method, typo finding, incomplete-discovery exit, inline failure reporting, and source-execution sentinel.\n";
+// Exercise the real finder patch separately, without weakening the application's source-hash guard.
+$finderRoot = $fixture . '/finder';
+mkdir($finderRoot);
+file_put_contents($finderRoot . '/Declarations.php', '<?php class D3R_Model { public static function findById($id) {} public static function findFirstById($id) {} public static function findFirst($whereOrId = "all", $params = []) {} public static function findFirstBySql($sql, $params = []) {} public static function findBySql($sql, $params = []) {} } class D3R_Model_Collection {} class FinderProduct extends D3R_Model { public function label(): int { return 1; } }');
+$runFinder = static function (string $source, int $expected) use ($finderRoot, $package, $cache): array {
+    file_put_contents($finderRoot . '/Control.php', '<?php ' . $source);
+    file_put_contents($finderRoot . '/mago.toml', "php-version = \"8.2\"\n[source]\npaths = [\"Control.php\"]\nincludes = [\"Declarations.php\"]\npatches = ["
+        . json_encode($package . '/resources/static-analysis/finders.stub.php', JSON_UNESCAPED_SLASHES) . "]\n");
+    $matches = glob($cache . '/tools/mago-*/mago');
+    if (count($matches) !== 1) {
+        throw new RuntimeException('Finder fixture needs exactly one installed pinned Mago binary.');
+    }
+    $process = proc_open([$matches[0], '--workspace', $finderRoot, '--config', $finderRoot . '/mago.toml', '--colors', 'never',
+        'analyze', '--reporting-format', 'json'], [0 => STDIN, 1 => ['pipe', 'w'], 2 => STDERR], $pipes, $finderRoot);
+    $raw = stream_get_contents($pipes[1]);
+    fclose($pipes[1]);
+    $exit = proc_close($process);
+    $report = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+    if ($exit !== $expected) {
+        throw new RuntimeException('Unexpected finder contract result: ' . $raw);
+    }
+    return $report['issues'];
+};
+$runFinder('function first(): int { $p = FinderProduct::findFirst(); if ($p === false) { return 0; } return $p->label(); } function sql(): int { $p = FinderProduct::findFirstBySql("sql"); if ($p === false) { return 0; } return $p->label(); } function scalar(): int { $p = FinderProduct::findFirstById(1); if ($p === false) { return 0; } return $p->label(); }', 0);
+$finderIssues = $runFinder('function unsafe(): int { return FinderProduct::findFirst()->label(); } function collection(): int { $p = FinderProduct::findFirstById([1]); if ($p === false) { return 0; } return $p->label(); }', 1);
+$finderCodes = array_column($finderIssues, 'code');
+if (!in_array('invalid-method-access', $finderCodes, true) || !in_array('non-existent-method', $finderCodes, true)) {
+    throw new RuntimeException('Finder false branch or array collection distinction was lost: ' . json_encode($finderCodes));
+}
+echo "PASS: XML methods/properties, parent boundaries, finder contracts, typo findings, incomplete-discovery exit, inline reporting, and source-execution sentinel.\n";
 echo 'Fixture/reports retained at ' . $fixture . "\n";
