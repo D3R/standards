@@ -78,6 +78,9 @@ $runCheck = static function (string $package, string $fixture, string $cache, in
 file_put_contents($fixture . '/tests/Double.php', '<?php namespace FixtureTests; class Double {} class_alias(Double::class, \'Fixture\\\\Product\');');
 
 $valid = $runCheck($package, $fixture, $cache, 0);
+if ($valid['finderCollectionContracts'] !== 'native-source-fallback') {
+    throw new RuntimeException('An unreviewed framework source received finder patches.');
+}
 $modelBody = $runCheck($package, $fixture, $cache, 0, true, 'src/Product.php');
 $originalModel = file_get_contents($fixture . '/src/Product.php');
 file_put_contents($fixture . '/src/Product.php', str_replace('return $this->title;', 'return $this->titel;', $originalModel));
@@ -125,7 +128,7 @@ if ($toolingFailure['status'] !== 'tooling-failure' || isset($toolingFailure['st
 // Exercise the real finder patch separately, without weakening the application's source-hash guard.
 $finderRoot = $fixture . '/finder';
 mkdir($finderRoot);
-file_put_contents($finderRoot . '/Declarations.php', '<?php class D3R_Model { public static function findById($id) {} public static function findFirstById($id) {} public static function findFirst($whereOrId = "all", $params = []) {} public static function findFirstBySql($sql, $params = []) {} public static function findBySql($sql, $params = []) {} } class D3R_Model_Collection {} class FinderProduct extends D3R_Model { public function label(): int { return 1; } }');
+file_put_contents($finderRoot . '/Declarations.php', '<?php class D3R_Model { public static function findById($id) {} public static function findFirstById($id) {} public static function findFirst($whereOrId = "all", $params = []) {} public static function findFirstBySql($sql, $params = []) {} public static function findBySql($sql, $params = []) {} public static function getCollection() {} } class D3R_Model_Collection implements ArrayAccess, IteratorAggregate, Countable { public function __construct(D3R_Model $model) {} public function getIterator(): Traversable {} public function toArray() {} public function offsetGet($key) {} public function offsetSet($key, $value): void {} public function offsetUnset($key): void {} public function offsetExists($key): bool {} public function count(): int {} public function current() {} public function firstByField($field, $value) {} } class FinderProduct extends D3R_Model { public function label(): int { return 1; } }');
 $runFinder = static function (string $source, int $expected) use ($finderRoot, $package, $cache): array {
     file_put_contents($finderRoot . '/Control.php', '<?php ' . $source);
     file_put_contents($finderRoot . '/mago.toml', "php-version = \"8.2\"\n[source]\npaths = [\"Control.php\"]\nincludes = [\"Declarations.php\"]\npatches = ["
@@ -146,6 +149,8 @@ $runFinder = static function (string $source, int $expected) use ($finderRoot, $
     return $report['issues'];
 };
 $runFinder('function first(): int { $p = FinderProduct::findFirst(); if ($p === false) { return 0; } return $p->label(); } function sql(): int { $p = FinderProduct::findFirstBySql("sql"); if ($p === false) { return 0; } return $p->label(); } function scalar(): int { $p = FinderProduct::findFirstById(1); if ($p === false) { return 0; } return $p->label(); }', 0);
+$runFinder('function broad(D3R_Model_Collection $items): void {} function passCollection(): void { broad(FinderProduct::getCollection()); } function items(): int { $items = FinderProduct::findBySql("sql"); if ($items === false) { return 0; } foreach ($items as $item) { if ($item !== false) { return $item->label(); } } return 0; } function offset(): int { $item = FinderProduct::getCollection()[0]; if ($item === false) { return 0; } return $item->label(); } function constructed(): int { $items = new D3R_Model_Collection(new FinderProduct()); $item = $items->current(); if ($item === false) { return 0; } return $item->label(); }', 0);
+$runFinder('function typo(): mixed { $items = FinderProduct::getCollection(); foreach ($items as $item) { if ($item !== false) { return $item->lable(); } } return null; }', 1);
 $finderIssues = $runFinder('function unsafe(): int { return FinderProduct::findFirst()->label(); } function collection(): int { $p = FinderProduct::findFirstById([1]); if ($p === false) { return 0; } return $p->label(); }', 1);
 $finderCodes = array_column($finderIssues, 'code');
 if (!in_array('invalid-method-access', $finderCodes, true) || !in_array('non-existent-method', $finderCodes, true)) {

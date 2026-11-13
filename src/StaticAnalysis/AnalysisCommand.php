@@ -80,14 +80,23 @@ final class AnalysisCommand
                 return $coverage['gaps'] ? 2 : 0;
             }
             $inventory = $builder->generate($coverage, $reportDirectory);
-            file_put_contents($reportDirectory . '/discovery.json', $this->json($coverage));
             $paths = $this->sourcePaths($manifest, $options['path'] ?? [], $project);
             $patches = [$reportDirectory . '/models.mago.php'];
             $finderSource = $vendor . '/d3r/core/library/d3r_core/D3R/Model.php';
             $contracts = json_decode(file_get_contents($this->package . '/resources/mago/framework-contracts.json'), true, 512, JSON_THROW_ON_ERROR);
-            if (is_file($finderSource) && hash_file('sha256', $finderSource) === $contracts['finderSourceSha256']) {
+            $collectionSource = dirname($finderSource) . '/Model/Collection.php';
+            $finderContracts = 'native-source-fallback';
+            if (
+                is_file($finderSource) && hash_file('sha256', $finderSource) === $contracts['finderSourceSha256']
+                && is_file($collectionSource) && hash_file('sha256', $collectionSource) === $contracts['collectionSourceSha256']
+            ) {
                 $patches[] = $this->package . '/resources/static-analysis/finders.stub.php';
+                $finderContracts = 'reviewed-source-pair';
+                $inventory['inputs'][$collectionSource] = $contracts['collectionSourceSha256'];
+                file_put_contents($reportDirectory . '/inventory.json', $this->json($inventory));
             }
+            $coverage['finderCollectionContracts'] = $finderContracts;
+            file_put_contents($reportDirectory . '/discovery.json', $this->json($coverage));
             $phpVersion = $manifest['config']['platform']['php'] ?? '8.2';
             if (!preg_match('/^(\d+\.\d+)/', $phpVersion, $match)) {
                 throw new RuntimeException('Cannot determine target PHP version from Composer platform.php.');
@@ -127,7 +136,7 @@ final class AnalysisCommand
             $findingExit = $diagnostics['issues'] ? 1 : 0;
             $result = ['status' => $coverage['gaps'] ? 'incomplete-discovery' : ($findingExit ? 'diagnostics' : 'clean'),
                 'tool' => 'Mago 1.59.0', 'diagnostics' => count($diagnostics['issues']),
-                'discoveryGaps' => count($coverage['gaps']), 'metadataModels' => count($inventory['models']),
+                'discoveryGaps' => count($coverage['gaps']), 'metadataModels' => count($inventory['models']), 'finderCollectionContracts' => $finderContracts,
                 'wallSeconds' => round(microtime(true) - $started, 3), 'magoExit' => $exit,
                 'exit' => $coverage['gaps'] ? 2 : $findingExit];
             file_put_contents($reportDirectory . '/result.json', $this->json($result));
@@ -279,6 +288,7 @@ final class AnalysisCommand
             'Status: ' . $cell($result['status']) . '; exit ' . $result['exit'] . '.', ''];
         if (isset($result['metadataModels'])) {
             $lines[] = $result['metadataModels'] . ' models with generated metadata. Counts are findings, not confirmed bugs.';
+            $lines[] = 'Finder/collection contracts: ' . $cell($result['finderCollectionContracts'] ?? 'native-source-fallback') . '.';
         }
         $counts = array_count_values(array_column($issues, 'code'));
         arsort($counts);
