@@ -1,0 +1,16 @@
+{
+    "name": "d3r/static-analysis-toolchain",
+    "description": "Isolated dependencies for the optional D3R Mago pilot",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.2",
+        "carthage-software/mago": "1.59.0",
+        "nikic/php-parser": "5.7.0"
+    },
+    "config": {
+        "allow-plugins": false,
+        "platform": {
+            "php": "8.2.1"
+        }
+    }
+}
