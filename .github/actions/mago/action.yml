@@ -34,6 +34,8 @@ runs:
         D3R_ANALYSIS_CACHE: ${{ runner.temp }}/d3r-analysis
         D3R_ANALYSIS_REPORT: ${{ inputs.report-directory }}
       run: |
+        source_revision="$(git rev-parse HEAD)"
+        export D3R_ANALYSIS_SOURCE_REVISION="$source_revision"
         set +e
         php "$D3R_ANALYSIS_BIN" check --cache-dir="$D3R_ANALYSIS_CACHE" --report-dir="$D3R_ANALYSIS_REPORT" --github
         status=$?

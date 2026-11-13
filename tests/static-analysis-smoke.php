@@ -49,6 +49,10 @@ $runCheck = static function (string $package, string $fixture, string $cache, in
         $command[] = '--path=' . $path;
     }
     $environment = getenv();
+    $environment['GITHUB_SERVER_URL'] = 'https://github.com';
+    $environment['GITHUB_REPOSITORY'] = 'D3R/report-fixture';
+    $environment['GITHUB_SHA'] = str_repeat('b', 40);
+    $environment['D3R_ANALYSIS_SOURCE_REVISION'] = str_repeat('a', 40);
     $environment['GITHUB_STEP_SUMMARY'] = $fixture . '/summary.md';
     $environment['GITHUB_OUTPUT'] = $fixture . '/outputs';
     file_put_contents($environment['GITHUB_STEP_SUMMARY'], '');
@@ -72,6 +76,9 @@ $runCheck = static function (string $package, string $fixture, string $cache, in
     if (str_contains($summary, 'Download the report artifact')) {
         throw new RuntimeException('Failure explanation still requires an artifact.');
     }
+    if (!empty($result['diagnostics']) && !str_contains($summary, 'https://github.com/D3R/report-fixture/blob/' . str_repeat('a', 40) . '/')) {
+        throw new RuntimeException('Diagnostic summary has no commit-pinned source links.');
+    }
     return $result;
 };
 
@@ -82,6 +89,12 @@ if ($valid['finderCollectionContracts'] !== 'native-source-fallback') {
     throw new RuntimeException('An unreviewed framework source received finder patches.');
 }
 $modelBody = $runCheck($package, $fixture, $cache, 0, true, 'src/Product.php');
+file_put_contents($fixture . '/src/Report #1.php', "<?php\nnamespace Fixture;\nfunction reportLocation(Product \$product): mixed { return \$product->titel(); }\n");
+$reportLocation = $runCheck($package, $fixture, $cache, 1, true, 'src/Report #1.php');
+$linkedSummary = file_get_contents($fixture . '/summary.md');
+if (!str_contains($linkedSummary, '/blob/' . str_repeat('a', 40) . '/src/Report%20%231.php#L3')) {
+    throw new RuntimeException('Source links lost path encoding or one-based diagnostic lines.');
+}
 $originalModel = file_get_contents($fixture . '/src/Product.php');
 file_put_contents($fixture . '/src/Product.php', str_replace('return $this->title;', 'return $this->titel;', $originalModel));
 $propertyTypo = $runCheck($package, $fixture, $cache, 1, true, 'src/Product.php');

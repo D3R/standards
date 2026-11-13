@@ -268,6 +268,7 @@ final class AnalysisCommand
         if ($output) {
             file_put_contents($output, 'reason=' . $reason . "\nstatus=" . $result['status'] . "\n", FILE_APPEND);
         }
+        $findings = [];
         foreach (array_slice($issues, 0, 50) as $issue) {
             foreach ($issue['annotations'] ?? [] as $annotation) {
                 if ($annotation['kind'] !== 'Primary') {
@@ -279,8 +280,17 @@ final class AnalysisCommand
                     continue;
                 }
                 $file = substr($file, strlen($project) + 1);
-                echo '::warning file=' . $escapeProperty($file) . ',line=' . ($span['start']['line'] + 1)
-                    . ',title=' . $escapeProperty($issue['code']) . '::' . $escapeData(substr($issue['message'], 0, 800)) . "\n";
+                $line = $span['start']['line'] + 1;
+                $url = $this->githubSourceUrl($file, $line);
+                $message = substr($issue['message'], 0, 800);
+                $location = str_replace(['[', ']'], ['&#91;', '&#93;'], $cell($file . '#L' . $line));
+                if ($url !== null) {
+                    $message .= ' Source: ' . $url;
+                    $location = '[' . $location . '](' . $url . ')';
+                }
+                $findings[] = '| ' . $cell($issue['code']) . ' | ' . $location . ' | ' . $cell($issue['message']) . ' |';
+                echo '::warning file=' . $escapeProperty($file) . ',line=' . $line
+                    . ',title=' . $escapeProperty($issue['code']) . '::' . $escapeData($message) . "\n";
                 break;
             }
         }
@@ -299,6 +309,10 @@ final class AnalysisCommand
             }
             $lines[] = '';
             $lines[] = 'Up to 50 individual findings appear as file/line annotations in the analysis step.';
+        }
+        if ($findings) {
+            $lines = array_merge($lines, ['', '#### Findings (first 50)', '',
+                '| Category | Source | Message |', '| --- | --- | --- |'], $findings);
         }
         if ($gaps) {
             $lines = array_merge($lines, ['', '#### Discovery gaps (first 50 of ' . count($gaps) . ')', '',
@@ -324,6 +338,31 @@ final class AnalysisCommand
         if ($summary) {
             file_put_contents($summary, $text, FILE_APPEND);
         }
+    }
+
+    /**
+     * Link to the exact checkout revision supplied by Actions, including PR merge commits.
+     *
+     * @param string $file Project-relative source path.
+     * @param int $line One-based diagnostic line.
+     * @return ?string Encoded source permalink, or null outside a valid Actions context.
+     */
+    private function githubSourceUrl(string $file, int $line): ?string
+    {
+        $server = rtrim(getenv('GITHUB_SERVER_URL') ?: 'https://github.com', '/');
+        $repository = getenv('GITHUB_REPOSITORY') ?: '';
+        $revision = getenv('D3R_ANALYSIS_SOURCE_REVISION') ?: (getenv('GITHUB_SHA') ?: '');
+        $parts = explode('/', $file);
+        if (
+            !preg_match('~^https://[a-zA-Z0-9.-]+(?::[0-9]+)?$~D', $server)
+            || !preg_match('~^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$~D', $repository)
+            || !preg_match('/^[a-f0-9]{40}$/iD', $revision)
+            || array_intersect($parts, ['', '.', '..']) || $line < 1
+        ) {
+            return null;
+        }
+        return $server . '/' . $repository . '/blob/' . $revision . '/'
+            . implode('/', array_map('rawurlencode', $parts)) . '#L' . $line;
     }
 
     /**

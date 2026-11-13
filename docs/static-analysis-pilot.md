@@ -1,5 +1,7 @@
 # Discovery scope and pilot limitations
 
+GitHub job summaries list up to 50 findings with direct file/line links. The action pins links to the actual checked-out commit; annotation messages also include the source URL because GitHub controls annotation navigation.
+
 The user-facing setup and CI commands are in the [README](../README.md#mago-static-analysis-irm-1004-pilot). This document records the coverage boundary, not extra installation steps.
 
 ## Ownership and isolation
