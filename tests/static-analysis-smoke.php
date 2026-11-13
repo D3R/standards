@@ -97,6 +97,14 @@ $discovered = json_decode(file_get_contents($fixture . '/reports/discovery.json'
 if (!isset($discovered['aliasCandidates']['Extra'], $discovered['aliasCandidates']['Merged'])) {
     throw new RuntimeException('Declarative parent merge or installed-interface conditional was not resolved.');
 }
+// Parent contracts use their own XML graph; child-only fields never leak upward.
+file_put_contents($fixture . '/src/BaseProduct.php', '<?php namespace Fixture; class BaseProduct extends \\D3R_Model { public function __get($name): mixed { return null; } public function __call($name, $args): mixed { return null; } }');
+file_put_contents($fixture . '/src/BaseProduct.xml', '<fields><field><name>Inherited</name><type>Text</type></field></fields>');
+file_put_contents($fixture . '/src/Product.php', str_replace('extends \\D3R_Model', 'extends BaseProduct', $originalModel));
+file_put_contents($fixture . '/src/Control.php', '<?php namespace Fixture; function inherited(BaseProduct $product): int { return $product->inherited()->getLength(); }');
+$parentContract = $runCheck($package, $fixture, $cache, 0);
+file_put_contents($fixture . '/src/Control.php', '<?php namespace Fixture; function childOnly(BaseProduct $product): mixed { return $product->title(); }');
+$childOnly = $runCheck($package, $fixture, $cache, 1);
 file_put_contents($fixture . '/src/Control.php', '<?php namespace Fixture; function invalid(Product $product): mixed { return $product->titel(); }');
 $invalid = $runCheck($package, $fixture, $cache, 1);
 $wholeSource = $runCheck($package, $fixture, $cache, 1, false);

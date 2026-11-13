@@ -12,7 +12,7 @@ The package root adds no SDK/parser runtime dependency to a consuming applicatio
 
 - Existing generated provider order, Composer classmap, PSR-4 and legacy PSR-0 source paths.
 - Literal `$models`, static properties, parent model-list merges and simple installed-class/interface conditions with bounded source-only interpretation; alias candidates retain their declaring provider. Unrecognised expressions remain gaps.
-- Concrete model/parent graph and breadth-first nested trait XML in FieldBroker structural order.
+- Concrete model/parent graph and breadth-first nested trait XML in FieldBroker structural order. Parent model types receive their own metadata graph, without child-only fields being promoted onto the parent.
 - XML fieldset/duplicate precedence and False skip behaviour; lowercase type names are normalised.
 - Field-class lookup from the default naming convention and literal binding candidates.
 - Known XML properties inside and outside model methods, the inherited model `id` property, and conservative magic-call signatures. No-argument field calls return the default field object; calls with arguments return a precise object only for an exact `return $this` expose contract. Binding overrides remain mixed because container execution is not inferred. Raw values remain mixed. Native declared properties retain their contracts.

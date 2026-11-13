@@ -46,10 +46,21 @@ final class ProjectInventory
                 $report['gaps'][] = ['provider' => $provider, 'reason' => $error->getMessage()];
             }
         }
-        foreach (array_unique(array_column($report['aliasCandidates'], 'class')) as $class) {
+        $pending = array_unique(array_column($report['aliasCandidates'], 'class'));
+        $seen = [];
+        while ($pending) {
+            $class = array_shift($pending);
+            if (isset($seen[$class])) {
+                continue;
+            }
+            $seen[$class] = true;
             try {
                 $sources = $this->discovery->modelSources($class);
                 $report['models'][$class] = $sources;
+                $parent = $this->discovery->declaration($class)['parent'];
+                if ($parent !== null && $parent !== 'D3R_Model') {
+                    $pending[] = $parent;
+                }
                 if ($sources['additionalXmlRequiresReview'] !== null) {
                     $report['gaps'][] = ['model' => $class, 'reason' => $sources['additionalXmlRequiresReview']];
                 }
