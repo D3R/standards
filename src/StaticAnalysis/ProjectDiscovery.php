@@ -366,13 +366,18 @@ final class ProjectDiscovery
             }
             try {
                 $alias = $this->literalValue($call->args[0]->value, $declaration['file'], $class);
-                $concrete = $this->literalValue($call->args[1]->value, $declaration['file'], $class);
-                if (is_string($alias) && is_string($concrete)) {
-                    $bindings[] = ['alias' => $alias, 'class' => $concrete,
-                        'file' => $declaration['file'], 'line' => $call->getStartLine()];
+                if (!is_string($alias)) {
+                    continue;
                 }
+                try {
+                    $concrete = $this->literalValue($call->args[1]->value, $declaration['file'], $class);
+                } catch (Throwable $error) {
+                    $concrete = null;
+                }
+                $bindings[] = ['alias' => $alias, 'class' => is_string($concrete) ? $concrete : null,
+                    'file' => $declaration['file'], 'line' => $call->getStartLine()];
             } catch (Throwable $error) {
-                // Closures, variables and executable expressions are deliberately not evaluated.
+                // Unknown aliases cannot be attributed; executable expressions are never evaluated.
             }
         }
         return $bindings;

@@ -15,7 +15,7 @@ The package root adds no SDK/parser runtime dependency to a consuming applicatio
 - Concrete model/parent graph and breadth-first nested trait XML in FieldBroker structural order. Parent model types receive their own metadata graph, without child-only fields being promoted onto the parent.
 - XML fieldset/duplicate precedence and False skip behaviour; lowercase type names are normalised.
 - Field-class lookup from the default naming convention and literal binding candidates.
-- Known XML properties inside and outside model methods, the inherited model `id` property, and conservative magic-call signatures. No-argument field calls return the default field object; calls with arguments return a precise object only for an exact `return $this` expose contract. Binding overrides remain mixed because container execution is not inferred. Raw values remain mixed. Native declared properties retain their contracts.
+- Known XML properties inside and outside model methods, the inherited model `id` property, and conservative magic-call signatures. No-argument field calls return the default field object; calls with arguments return a precise object only for an exact `return $this` expose contract. Binding overrides, including literal aliases backed by factories, remain mixed because container execution is not inferred. Raw values remain mixed. Native declared properties retain their contracts.
 - Existing native method names reserved by token parsing, so XML annotations do not retype them.
 - Fresh generation on every check; source hashes include parsed provider/model/trait/field inputs, Composer metadata and absent adjacent XML paths. No persistent analyser cache is assumed.
 

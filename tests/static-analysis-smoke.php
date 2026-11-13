@@ -108,6 +108,23 @@ file_put_contents($fixture . '/src/Control.php', '<?php namespace Fixture; funct
 $parentContract = $runCheck($package, $fixture, $cache, 0);
 file_put_contents($fixture . '/src/Control.php', '<?php namespace Fixture; function childOnly(BaseProduct $product): mixed { return $product->title(); }');
 $childOnly = $runCheck($package, $fixture, $cache, 1);
+// A literal field alias with a factory is not proof of the default concrete field type.
+$providerSource = file_get_contents($fixture . '/src/Provider.php');
+file_put_contents($fixture . '/src/Provider.php', '<?php namespace Fixture; class Provider { public function getModelList() { return ["Product" => Product::class]; } public function registerServices($container) { $container->add("D3R_Model_Field_Text", function () { file_put_contents(__DIR__ . "/EXECUTED", "bad"); return new \\D3R_Model_Field_Text(); }); } }');
+file_put_contents($fixture . '/src/Control.php', '<?php namespace Fixture; function factoryField(Product $product): mixed { return $product->title(); }');
+$factoryField = $runCheck($package, $fixture, $cache, 0);
+$factoryInventory = json_decode(file_get_contents($fixture . '/reports/inventory.json'), true, 512, JSON_THROW_ON_ERROR);
+if ($factoryInventory['models']['Fixture\\Product']['supported']['title']['fieldClassReliable'] !== false) {
+    throw new RuntimeException('A field factory was incorrectly treated as a proven default class.');
+}
+file_put_contents($fixture . '/src/Provider.php', $providerSource);
+// Refuse ambiguous lexical self binding instead of using the child's shadowing map.
+$baseProviderSource = file_get_contents($fixture . '/src/BaseProvider.php');
+file_put_contents($fixture . '/src/BaseProvider.php', '<?php namespace Fixture; class BaseProvider { protected static $models = ["Product" => Product::class]; public function getModelList() { return self::$models; } }');
+file_put_contents($fixture . '/src/Provider.php', '<?php namespace Fixture; class Provider extends BaseProvider { protected static $models = []; }');
+$lexical = $runCheck($package, $fixture, $cache, 2);
+file_put_contents($fixture . '/src/Provider.php', $providerSource);
+file_put_contents($fixture . '/src/BaseProvider.php', $baseProviderSource);
 file_put_contents($fixture . '/src/Control.php', '<?php namespace Fixture; function invalid(Product $product): mixed { return $product->titel(); }');
 $invalid = $runCheck($package, $fixture, $cache, 1);
 $wholeSource = $runCheck($package, $fixture, $cache, 1, false);
@@ -133,7 +150,8 @@ $runFinder = static function (string $source, int $expected) use ($finderRoot, $
     file_put_contents($finderRoot . '/Control.php', '<?php ' . $source);
     file_put_contents($finderRoot . '/mago.toml', "php-version = \"8.2\"\n[source]\npaths = [\"Control.php\"]\nincludes = [\"Declarations.php\"]\npatches = ["
         . json_encode($package . '/resources/static-analysis/finders.stub.php', JSON_UNESCAPED_SLASHES) . "]\n");
-    $matches = glob($cache . '/tools/mago-*/mago');
+    $release = json_decode(file_get_contents($package . '/resources/mago/releases.json'), true, 512, JSON_THROW_ON_ERROR);
+    $matches = glob($cache . '/tools/mago-' . $release['version'] . '-*/mago');
     if (count($matches) !== 1) {
         throw new RuntimeException('Finder fixture needs exactly one installed pinned Mago binary.');
     }

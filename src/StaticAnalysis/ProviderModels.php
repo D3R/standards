@@ -117,6 +117,9 @@ final class ProviderModels
             return $this->expression($expr, $class, $owner, $file, $state, $depth + 1);
         };
         if ($this->isModels($node)) {
+            if ($node instanceof Expr\StaticPropertyFetch && $node->class->toString() === 'self' && $owner !== $class) {
+                throw new RuntimeException('Inherited lexical self::$models requires a reviewed static-property rule.');
+            }
             return $this->property($class, $state);
         }
         if ($node instanceof Expr\ArrayDimFetch) {
@@ -154,6 +157,11 @@ final class ProviderModels
         if ($node instanceof Expr\FuncCall && $node->name instanceof \PhpParser\Node\Name) {
             $name = strtolower($node->name->toString());
             if ($name === 'array_merge') {
+                foreach ($node->args as $argument) {
+                    if ($argument->unpack || $argument->name !== null) {
+                        throw new RuntimeException('Unpacked or named provider merge arguments require review.');
+                    }
+                }
                 return array_merge(...array_map(fn($argument) => $value($argument->value), $node->args));
             }
             if (in_array($name, ['interface_exists', 'class_exists'], true) && count($node->args) === 1) {
