@@ -1,0 +1,25 @@
+{
+  "version": "1.59.0",
+  "assets": [
+    {
+      "name": "mago-1.59.0-aarch64-apple-darwin.tar.gz",
+      "browser_download_url": "https://github.com/carthage-software/mago/releases/download/1.59.0/mago-1.59.0-aarch64-apple-darwin.tar.gz",
+      "digest": "sha256:fdbd2e069fed69475dc9884cc7aae86e9a38f9e635be410de63d9a013512e147"
+    },
+    {
+      "name": "mago-1.59.0-aarch64-unknown-linux-gnu.tar.gz",
+      "browser_download_url": "https://github.com/carthage-software/mago/releases/download/1.59.0/mago-1.59.0-aarch64-unknown-linux-gnu.tar.gz",
+      "digest": "sha256:b406bd70569f2ec72441ac1d9b518942cf024f49273d2b2fc44dc6c5663e2ed3"
+    },
+    {
+      "name": "mago-1.59.0-x86_64-apple-darwin.tar.gz",
+      "browser_download_url": "https://github.com/carthage-software/mago/releases/download/1.59.0/mago-1.59.0-x86_64-apple-darwin.tar.gz",
+      "digest": "sha256:13959b6b4154394d949df5ee388924defa8181084911a524eb8da3984b27ac2f"
+    },
+    {
+      "name": "mago-1.59.0-x86_64-unknown-linux-gnu.tar.gz",
+      "browser_download_url": "https://github.com/carthage-software/mago/releases/download/1.59.0/mago-1.59.0-x86_64-unknown-linux-gnu.tar.gz",
+      "digest": "sha256:46809992b8afb54f4fdb87b55a39b8c269eac5dbf9de49956810ae55e7015d65"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+name: D3R Mago pilot
+description: Run the package-owned Mago analyser and retain diagnostics and discovery coverage.
+inputs:
+  report-directory:
+    description: Project-relative report directory
+    default: .github/outputs/mago
+outputs:
+  exit-code:
+    description: 0 clean, 1 diagnostics, 2 incomplete discovery or tooling failure
+    value: ${{ steps.analysis.outputs.exit-code }}
+runs:
+  using: composite
+  steps:
+    - name: Cache isolated Mago tools
+      uses: actions/cache@v4
+      with:
+        path: ${{ runner.temp }}/d3r-analysis/tools
+        key: d3r-mago-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/resources/mago/toolchain/composer.lock', '**/resources/mago/releases.json') }}
+    - name: Set up isolated Mago tools
+      shell: bash
+      env:
+        D3R_ANALYSIS_BIN: ${{ github.action_path }}/../../../bin/d3r-analysis
+        D3R_ANALYSIS_CACHE: ${{ runner.temp }}/d3r-analysis
+      run: php "$D3R_ANALYSIS_BIN" setup --cache-dir="$D3R_ANALYSIS_CACHE"
+    - name: Analyse PHP and discover D3R metadata
+      id: analysis
+      continue-on-error: true
+      shell: bash
+      env:
+        D3R_ANALYSIS_BIN: ${{ github.action_path }}/../../../bin/d3r-analysis
+        D3R_ANALYSIS_CACHE: ${{ runner.temp }}/d3r-analysis
+        D3R_ANALYSIS_REPORT: ${{ inputs.report-directory }}
+      run: |
+        set +e
+        php "$D3R_ANALYSIS_BIN" check --cache-dir="$D3R_ANALYSIS_CACHE" --report-dir="$D3R_ANALYSIS_REPORT" --github
+        status=$?
+        echo "exit-code=$status" >> "$GITHUB_OUTPUT"
+        exit "$status"
+    - name: Upload Mago diagnostics and discovery coverage
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: mago-${{ github.job }}-${{ github.run_attempt }}
+        path: ${{ inputs.report-directory }}/
+        include-hidden-files: true
+        if-no-files-found: warn
+        retention-days: 14
+    - name: Preserve the analysis result
+      if: always() && steps.analysis.outcome == 'failure'
+      shell: bash
+      run: exit 1

@@ -1,0 +1,20 @@
+#!/usr/bin/env php
+<?php
+
+// Deliberately do not use $_composer_autoload_path: the project loader boots D3R providers.
+if (PHP_VERSION_ID < 80200) {
+    fwrite(STDERR, "D3R Mago analysis requires PHP 8.2 or later.\n");
+    exit(2);
+}
+ini_set('memory_limit', '1G');
+$package = dirname(__DIR__);
+spl_autoload_register(static function (string $class) use ($package): void {
+    $prefix = 'D3R\\Standards\\StaticAnalysis\\';
+    if (str_starts_with($class, $prefix)) {
+        $file = $package . '/src/StaticAnalysis/' . substr($class, strlen($prefix)) . '.php';
+        if (is_file($file)) {
+            require $file;
+        }
+    }
+});
+exit((new D3R\Standards\StaticAnalysis\AnalysisCommand($package))->run(array_slice($argv, 1)));

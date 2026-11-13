@@ -20,5 +20,8 @@
     ],
     "require": {
         "lendable/composer-license-checker": "^1.0"
-    }
+    },
+    "bin": [
+        "bin/d3r-analysis"
+    ]
 }
