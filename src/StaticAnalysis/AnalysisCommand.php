@@ -232,13 +232,18 @@ final class AnalysisCommand
                     continue;
                 }
                 $file = substr($file, strlen($project) + 1);
-                $escape = static fn(string $text): string => str_replace(
-                    ['%', "\r", "\n", ',', ':'],
-                    ['%25', '%0D', '%0A', '%2C', '%3A'],
+                $escapeData = static fn(string $text): string => str_replace(
+                    ['%', "\r", "\n"],
+                    ['%25', '%0D', '%0A'],
                     $text
                 );
-                echo '::warning file=' . $escape($file) . ',line=' . ($span['start']['line'] + 1)
-                    . ',title=' . $escape($issue['code']) . '::' . $escape($issue['message']) . "\n";
+                $escapeProperty = static fn(string $text): string => str_replace(
+                    [',', ':'],
+                    ['%2C', '%3A'],
+                    $escapeData($text)
+                );
+                echo '::warning file=' . $escapeProperty($file) . ',line=' . ($span['start']['line'] + 1)
+                    . ',title=' . $escapeProperty($issue['code']) . '::' . $escapeData($issue['message']) . "\n";
                 break;
             }
         }
