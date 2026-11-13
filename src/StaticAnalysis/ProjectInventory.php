@@ -76,10 +76,11 @@ final class ProjectInventory
     {
         $classes = [];
         $returns = [];
+        $reliable = [];
         $bindingCandidates = [];
         foreach ($report['literalBindings'] as $bindings) {
             foreach ($bindings as $binding) {
-                $bindingCandidates[$binding['alias']] = $binding['class'];
+                $bindingCandidates[$binding['alias']] = $binding;
             }
         }
         $inventory = ['models' => [], 'inputs' => [], 'valueTypesInferred' => false];
@@ -110,7 +111,8 @@ final class ProjectInventory
                             continue;
                         }
                         $alias = 'D3R_Model_Field_' . $type;
-                        $fieldClass = $bindingCandidates[$alias] ?? $alias;
+                        $fieldClass = $bindingCandidates[$alias]['class'] ?? $alias;
+                        $reliable[$type] = !isset($bindingCandidates[$alias]);
                         $this->discovery->declaration($fieldClass);
                         $classes[$type] = $fieldClass;
                         $returns[$type] = 'mixed';
@@ -133,7 +135,7 @@ final class ProjectInventory
                 }
                 $model = ['class' => $class, 'xmlSources' => $sources['structuralXmlSources'],
                     'phpSources' => array_merge($sources['structuralPhpSources'], [$this->discovery->declaration('D3R_Model')['file']])];
-                $generated = XmlMetadata::generate(['fieldClasses' => $classes, 'fieldMethodReturns' => $returns,
+                $generated = XmlMetadata::generate(['fieldClasses' => $classes, 'fieldMethodReturns' => $returns, 'fieldClassReliability' => $reliable,
                     'models' => [$model]], $this->project);
                 if ($generated['inventory']['models'][$class]['unsupported']) {
                     $report['gaps'][] = ['model' => $class, 'reason' => 'Some XML member names are unsupported; inspect inventory.json.'];

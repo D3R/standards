@@ -98,7 +98,11 @@ final class MagoXmlMethods implements Plugin, MethodReturnTypeProvider, Callable
         if ($fieldClass === null) {
             return null;
         }
-        return $this->returnsFieldObject($context->invocation) ? Type::namedObject($fieldClass) : Type::mixed();
+        if (!$this->reliableFieldClass($context->invocation)) {
+            return Type::mixed();
+        }
+        return !$context->invocation->arguments || $this->returnsFieldObject($context->invocation)
+            ? Type::namedObject($fieldClass) : Type::mixed();
     }
 
     /**
@@ -115,6 +119,18 @@ final class MagoXmlMethods implements Plugin, MethodReturnTypeProvider, Callable
         return new EffectiveCallableSignature([
             new CallableParameter(name: '$args', type: Type::mixed(), variadic: true),
         ]);
+    }
+
+    /**
+     * Avoid promising a concrete field type for unproved container overrides.
+     *
+     * @param Invocation $invocation Recognised concrete model field call.
+     * @return bool Whether the default field class is authoritative.
+     */
+    private function reliableFieldClass(Invocation $invocation): bool
+    {
+        $type = $invocation->receiverType->atomicTypes[0];
+        return $this->models[strtolower($type->name)][$invocation->name]['fieldClassReliable'] ?? true;
     }
 
     /**

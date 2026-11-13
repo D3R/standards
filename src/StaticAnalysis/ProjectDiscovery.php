@@ -76,9 +76,12 @@ final class ProjectDiscovery
      * @param ?string $context Context input for this operation.
      * @return mixed Result of the documented operation.
      */
-    private function value(Expr $expression, string $file, ?string $context = null): mixed
+    public function literalValue(Expr $expression, string $file, ?string $context = null): mixed
     {
         $evaluator = new ConstExprEvaluator(function (Expr $node) use ($file, $context) {
+            if ($node instanceof \PhpParser\Node\Scalar\MagicConst\Dir) {
+                return dirname($file);
+            }
             if ($node instanceof Expr\Variable && $node->name === 'vendorDir') {
                 return $this->vendor;
             }
@@ -106,7 +109,7 @@ final class ProjectDiscovery
         if (count($returns) !== 1 || !$returns[0]->expr instanceof Expr\Array_) {
             throw new RuntimeException('Unexpected Composer map shape: ' . $file);
         }
-        return $this->value($returns[0]->expr, $file);
+        return $this->literalValue($returns[0]->expr, $file);
     }
 
     /**
@@ -255,30 +258,35 @@ final class ProjectDiscovery
      */
     public function models(string $class): ?array
     {
-        $member = $this->member($class, 'method', 'getModelList');
-        if ($member === null) {
-            return null;
+        return (new ProviderModels($this))->read($class);
+    }
+
+    /**
+     * Check a parsed inheritance/interface graph without class loading.
+     *
+     * @param string $class Class or interface to inspect.
+     * @param string $target Required ancestor/interface name.
+     * @param array $seen Cycle guard.
+     * @return bool Whether the declaration graph contains the target.
+     */
+    public function isA(string $class, string $target, array $seen = []): bool
+    {
+        if (strcasecmp($class, $target) === 0) {
+            return true;
         }
-        [$method, $declaring, $file] = $member;
-        if (count($method->stmts ?? []) !== 1 || !$method->stmts[0] instanceof Stmt\Return_) {
-            throw new RuntimeException('Dynamic getModelList: ' . $declaring . ':' . $method->getStartLine());
+        if (isset($seen[$class])) {
+            return false;
         }
-        $expression = $method->stmts[0]->expr;
-        if ($expression instanceof Expr\PropertyFetch || $expression instanceof Expr\StaticPropertyFetch) {
-            $name = $expression->name->toString();
-            if ($name !== 'models') {
-                throw new RuntimeException('Nonstandard model-list property in ' . $class);
+        $seen[$class] = true;
+        $declaration = $this->declaration($class);
+        $node = $declaration['node'];
+        $ancestors = $node instanceof Stmt\Interface_ ? $node->extends : ($node->implements ?? []);
+        foreach ($ancestors as $ancestor) {
+            if ($this->isA($ancestor->toString(), $target, $seen)) {
+                return true;
             }
-            $property = $this->member($class, 'property', $name);
-            if ($property === null || $property[0]->default === null) {
-                throw new RuntimeException('Missing models initializer in ' . $class);
-            }
-            return $this->value($property[0]->default, $property[2], $class);
         }
-        if ($expression instanceof Expr\Array_) {
-            return $this->value($expression, $file, $class);
-        }
-        throw new RuntimeException('Unsupported getModelList expression in ' . $declaring);
+        return $declaration['parent'] !== null && $this->isA($declaration['parent'], $target, $seen);
     }
 
     /**
@@ -357,8 +365,8 @@ final class ProjectDiscovery
                 continue;
             }
             try {
-                $alias = $this->value($call->args[0]->value, $declaration['file'], $class);
-                $concrete = $this->value($call->args[1]->value, $declaration['file'], $class);
+                $alias = $this->literalValue($call->args[0]->value, $declaration['file'], $class);
+                $concrete = $this->literalValue($call->args[1]->value, $declaration['file'], $class);
                 if (is_string($alias) && is_string($concrete)) {
                     $bindings[] = ['alias' => $alias, 'class' => $concrete,
                         'file' => $declaration['file'], 'line' => $call->getStartLine()];
@@ -432,6 +440,6 @@ final class ProjectDiscovery
         if (count($arrays) !== 1) {
             throw new RuntimeException('Unexpected generated provider-list syntax.');
         }
-        return $this->value($arrays[0], $this->vendor . '/d3r.php');
+        return $this->literalValue($arrays[0], $this->vendor . '/d3r.php');
     }
 }

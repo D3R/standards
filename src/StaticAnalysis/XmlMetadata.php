@@ -121,6 +121,7 @@ final class XmlMetadata
                     'fieldClass' => $fieldClass,
                     'magicMethod' => $isMagicMethod,
                     'returnsFieldObject' => $returnsFieldObject,
+                    'fieldClassReliable' => $manifest['fieldClassReliability'][$field['type']] ?? true,
                 ];
             }
             $declarations[$class] = self::declaration($class, $members);

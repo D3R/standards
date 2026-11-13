@@ -19,15 +19,16 @@ file_put_contents($fixture . '/composer.json', json_encode(['name' => 'fixture/a
 $files = [
     'D3R_Model.php' => '<?php abstract class D3R_Model { public static function getXmlSources(): array { return []; } }',
     'D3R_Model_Field_Text.php' => '<?php class D3R_Model_Field_Text { public function getLength(): int { return 1; } public function expose($args = false) { return $this; } }',
+    'D3R_Model_Field_Date.php' => '<?php class D3R_Model_Field_Date { public function getYear(): int { return 2026; } public function expose($args = false) { return \'formatted\'; } }',
     'Provider.php' => '<?php namespace Fixture; class Provider { public function getModelList() { return ["Product" => Product::class]; } }',
-    'Product.php' => '<?php namespace Fixture; file_put_contents(__DIR__ . "/EXECUTED", "bad"); class Product extends \\D3R_Model { public function __get($name): mixed { return null; } public function __call($name, $args): mixed { return null; } }',
+    'Product.php' => '<?php namespace Fixture; file_put_contents(__DIR__ . "/EXECUTED", "bad"); /** Concrete source model. */ class Product extends \\D3R_Model { public int $display_name_and_value = 1; public function nativeValue(): int { return $this->display_name_and_value; } public function insideLabel(): int { return $this->title()->getLength(); } public function rawLabel(): mixed { return $this->title; } public function year(): int { return $this->release_date()->getYear(); } public function __get($name): mixed { return null; } public function __call($name, $args): mixed { return null; } }',
     'Control.php' => '<?php namespace Fixture; function valid(Product $product): int { return $product->title()->getLength(); }',
 ];
 foreach ($files as $name => $contents) {
     file_put_contents($fixture . '/src/' . $name, $contents);
 }
-file_put_contents($fixture . '/src/Product.xml', '<model><fieldset><field><name>Title</name><dbname>title</dbname><type>Text</type></field><field><name>Display name &amp; Value</name><type>Text</type></field></fieldset></model>');
-file_put_contents($fixture . '/vendor/composer/autoload_classmap.php', '<?php return ["D3R_Model" => $baseDir . "/src/D3R_Model.php", "D3R_Model_Field_Text" => $baseDir . "/src/D3R_Model_Field_Text.php"];');
+file_put_contents($fixture . '/src/Product.xml', '<model><fieldset><field><name>Title</name><dbname>title</dbname><type>Text</type></field><field><name>Display name &amp; Value</name><type>Text</type></field><field><name>Release Date</name><type>Date</type></field></fieldset></model>');
+file_put_contents($fixture . '/vendor/composer/autoload_classmap.php', '<?php return ["D3R_Model" => $baseDir . "/src/D3R_Model.php", "D3R_Model_Field_Text" => $baseDir . "/src/D3R_Model_Field_Text.php", "D3R_Model_Field_Date" => $baseDir . "/src/D3R_Model_Field_Date.php"];');
 file_put_contents($fixture . '/vendor/composer/autoload_psr4.php', '<?php return ["Fixture\\\\" => [$baseDir . "/src"], "FixtureTests\\\\" => [$baseDir . "/tests"]];');
 file_put_contents($fixture . '/vendor/composer/autoload_namespaces.php', '<?php return [];');
 file_put_contents($fixture . '/vendor/d3r.php', '<?php D3R::container()->get("providers")->register(["Fixture\\\\Provider"]);');
@@ -41,11 +42,11 @@ file_put_contents($fixture . '/vendor/d3r.php', '<?php D3R::container()->get("pr
  * @param int $expected Expected input for this operation.
  * @return array Result of the documented operation.
  */
-$runCheck = static function (string $package, string $fixture, string $cache, int $expected, bool $focused = true): array {
+$runCheck = static function (string $package, string $fixture, string $cache, int $expected, bool $focused = true, string $path = 'src/Control.php'): array {
     $command = [PHP_BINARY, $package . '/bin/d3r-analysis', 'check', '--project=' . $fixture,
         '--cache-dir=' . $cache, '--report-dir=' . $fixture . '/reports', '--github'];
     if ($focused) {
-        $command[] = '--path=src/Control.php';
+        $command[] = '--path=' . $path;
     }
     $environment = getenv();
     $environment['GITHUB_STEP_SUMMARY'] = $fixture . '/summary.md';
@@ -77,9 +78,24 @@ $runCheck = static function (string $package, string $fixture, string $cache, in
 file_put_contents($fixture . '/tests/Double.php', '<?php namespace FixtureTests; class Double {} class_alias(Double::class, \'Fixture\\\\Product\');');
 
 $valid = $runCheck($package, $fixture, $cache, 0);
+$modelBody = $runCheck($package, $fixture, $cache, 0, true, 'src/Product.php');
+$originalModel = file_get_contents($fixture . '/src/Product.php');
+file_put_contents($fixture . '/src/Product.php', str_replace('return $this->title;', 'return $this->titel;', $originalModel));
+$propertyTypo = $runCheck($package, $fixture, $cache, 1, true, 'src/Product.php');
+file_put_contents($fixture . '/src/Product.php', $originalModel);
+$runCheck($package, $fixture, $cache, 0);
 $inventory = json_decode(file_get_contents($fixture . '/reports/inventory.json'), true, 512, JSON_THROW_ON_ERROR);
 if (!isset($inventory['models']['Fixture\\Product']['supported']['display_name_and_value'])) {
     throw new RuntimeException('D3R implicit field name or arbitrary XML container root was not discovered.');
+}
+// Provider inheritance, parent merges and pure declaration predicates.
+file_put_contents($fixture . '/src/BaseProvider.php', '<?php namespace Fixture; class BaseProvider { protected $models = ["Product" => Product::class]; public function getModelList() { return $this->models; } }');
+file_put_contents($fixture . '/src/EnabledInterface.php', '<?php namespace Fixture; interface EnabledInterface {}');
+file_put_contents($fixture . '/src/Provider.php', '<?php namespace Fixture; class Provider extends BaseProvider { public function getModelList() { if ($this->enabled()) { $this->models["Extra"] = Product::class; } return array_merge(parent::getModelList(), ["Merged" => Product::class]); } protected function enabled() { return interface_exists(EnabledInterface::class) && class_exists(Product::class); } }');
+$providers = $runCheck($package, $fixture, $cache, 0);
+$discovered = json_decode(file_get_contents($fixture . '/reports/discovery.json'), true, 512, JSON_THROW_ON_ERROR);
+if (!isset($discovered['aliasCandidates']['Extra'], $discovered['aliasCandidates']['Merged'])) {
+    throw new RuntimeException('Declarative parent merge or installed-interface conditional was not resolved.');
 }
 file_put_contents($fixture . '/src/Control.php', '<?php namespace Fixture; function invalid(Product $product): mixed { return $product->titel(); }');
 $invalid = $runCheck($package, $fixture, $cache, 1);

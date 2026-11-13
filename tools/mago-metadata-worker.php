@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use D3R\Standards\StaticAnalysis\MagoXmlMethods;
+use D3R\Standards\StaticAnalysis\MagoXmlProperties;
 use Mago\Sdk\Extension;
 use Mago\Sdk\Worker;
 
@@ -38,12 +39,13 @@ try {
     }
     require $sdk . '/vendor/autoload.php';
     require dirname(__DIR__) . '/src/StaticAnalysis/MagoXmlMethods.php';
+    require dirname(__DIR__) . '/src/StaticAnalysis/MagoXmlProperties.php';
     $plugin = new MagoXmlMethods($inventory);
     $extension = new Extension(
         'd3r/xml-metadata-pilot',
         'D3R XML metadata pilot',
         '0.0.0',
-        analyzerPlugins: [$plugin]
+        analyzerPlugins: [$plugin, new MagoXmlProperties($inventory)]
     );
     (new Worker($extension))->run();
 } catch (Throwable $error) {
